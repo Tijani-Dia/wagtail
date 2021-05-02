@@ -5,6 +5,7 @@ from django.urls.resolvers import RegexPattern
 
 from wagtail.core.models import Page
 from wagtail.core.url_routing import RouteResult
+from wagtail.core.utils import WAGTAIL_APPEND_SLASH
 
 
 _creation_counter = 0
@@ -103,6 +104,13 @@ class RoutablePageMixin:
                 path = '/'
                 if path_components:
                     path += '/'.join(path_components) + '/'
+
+                    if not WAGTAIL_APPEND_SLASH:
+                        try:
+                            view, args, kwargs = self.resolve_subpage(path.rstrip('/'))
+                            return RouteResult(self, args=(view, args, kwargs))
+                        except Http404:
+                            pass
 
                 view, args, kwargs = self.resolve_subpage(path)
                 return RouteResult(self, args=(view, args, kwargs))
