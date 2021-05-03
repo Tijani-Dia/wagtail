@@ -41,6 +41,13 @@ class TestRoutablePage(TestCase):
         self.assertEqual(args, ())
         self.assertEqual(kwargs, {'author_slug': 'joe-bloggs'})
 
+    def test_resolve_archive_by_title_view(self):
+        view, args, kwargs = self.routable_page.resolve_subpage('/archive/title/some-title/')
+
+        self.assertEqual(view, self.routable_page.archive_by_title)
+        self.assertEqual(args, ())
+        self.assertEqual(kwargs, {'title': 'some-title'})
+
     def test_resolve_external_view(self):
         view, args, kwargs = self.routable_page.resolve_subpage('/external/joe-bloggs/')
 
@@ -69,6 +76,11 @@ class TestRoutablePage(TestCase):
         url = self.routable_page.reverse_subpage('archive_by_author', kwargs={'author_slug': 'joe-bloggs'})
 
         self.assertEqual(url, 'archive/author/joe-bloggs/')
+
+    def test_reverse_archive_by_title_view(self):
+        url = self.routable_page.reverse_subpage('archive_by_title', kwargs={'title': 'some-title'})
+
+        self.assertEqual(url, 'archive/title/some-title/')
 
     def test_reverse_overridden_name(self):
         url = self.routable_page.reverse_subpage('name_overridden')
@@ -142,6 +154,11 @@ class TestRoutablePage(TestCase):
 
         self.assertContains(response, "ARCHIVE BY AUTHOR: joe-bloggs")
 
+    def test_get_archive_by_title_view(self):
+        response = self.client.get(self.routable_page.url + 'archive/title/some-title/')
+
+        self.assertContains(response, "ARCHIVE BY TITLE: some-title")
+
     def test_get_external_view(self):
         response = self.client.get(self.routable_page.url + 'external/joe-bloggs/')
 
@@ -201,6 +218,12 @@ class TestRoutablePageTemplateTag(TestCase):
 
         self.assertEqual(url, '/%s/archive/author/joe-bloggs/' % self.routable_page.slug)
 
+    def test_templatetag_reverse_archive_by_title_view(self):
+        url = routablepageurl(self.context, self.routable_page,
+                              'archive_by_title', title='some-title')
+
+        self.assertEqual(url, '/%s/archive/title/some-title/' % self.routable_page.slug)
+
     def test_templatetag_reverse_external_view(self):
         url = routablepageurl(self.context, self.routable_page,
                               'external_view', 'joe-bloggs')
@@ -258,6 +281,12 @@ class TestRoutablePageTemplateTagForSecondSiteAtSameRoot(TestCase):
                               'archive_by_author', author_slug='joe-bloggs')
 
         self.assertEqual(url, '/%s/archive/author/joe-bloggs/' % self.routable_page.slug)
+
+    def test_templatetag_reverse_archive_by_title_view(self):
+        url = routablepageurl(self.context, self.routable_page,
+                              'archive_by_title', title='some-title')
+
+        self.assertEqual(url, '/%s/archive/title/some-title/' % self.routable_page.slug)
 
     def test_templatetag_reverse_external_view(self):
         url = routablepageurl(self.context, self.routable_page,
@@ -318,6 +347,12 @@ class TestRoutablePageTemplateTagForSecondSiteAtDifferentRoot(TestCase):
                               'archive_by_author', author_slug='joe-bloggs')
 
         self.assertEqual(url, 'http://localhost/%s/archive/author/joe-bloggs/' % self.routable_page.slug)
+
+    def test_templatetag_reverse_archive_by_title_view(self):
+        url = routablepageurl(self.context, self.routable_page,
+                              'archive_by_title', title='some-title')
+
+        self.assertEqual(url, 'http://localhost/%s/archive/title/some-title/' % self.routable_page.slug)
 
     def test_templatetag_reverse_external_view(self):
         url = routablepageurl(self.context, self.routable_page,
