@@ -1,6 +1,6 @@
 from django.http import Http404
 from django.template.response import TemplateResponse
-from django.urls import URLResolver, re_path
+from django.urls import URLResolver, path, re_path
 from django.urls.resolvers import RegexPattern
 
 from wagtail.core.models import Page
@@ -19,9 +19,15 @@ def route(pattern, name=None):
         if not hasattr(view_func, '_routablepage_routes'):
             view_func._routablepage_routes = []
 
-        # Add new route to view
+        # Add new route to view depending on pattern type; default to path
+        pattern_type = path
+
+        # Inspired from django.urls.resolvers.RoutePattern's check method
+        if '(?P<' in pattern or pattern.startswith('^') or pattern.endswith('$'):
+            pattern_type = re_path
+
         view_func._routablepage_routes.append((
-            re_path(pattern, view_func, name=(name or view_func.__name__)),
+            pattern_type(pattern, view_func, name=(name or view_func.__name__)),
             _creation_counter,
         ))
 
