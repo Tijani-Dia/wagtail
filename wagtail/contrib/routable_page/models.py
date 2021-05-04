@@ -19,15 +19,29 @@ def route(pattern, name=None):
         if not hasattr(view_func, '_routablepage_routes'):
             view_func._routablepage_routes = []
 
-        # Add new route to view depending on pattern type; default to path
-        pattern_type = path
-
-        # Inspired from django.urls.resolvers.RoutePattern's check method
-        if '(?P<' in pattern or pattern.startswith('^') or pattern.endswith('$'):
-            pattern_type = re_path
-
+        # Add new route to view
         view_func._routablepage_routes.append((
-            pattern_type(pattern, view_func, name=(name or view_func.__name__)),
+            re_path(pattern, view_func, name=(name or view_func.__name__)),
+            _creation_counter,
+        ))
+
+        return view_func
+
+    return decorator
+
+
+def routex(pattern, name=None):
+    def decorator(view_func):
+        global _creation_counter
+        _creation_counter += 1
+
+        # Make sure page has _routablepage_routes attribute
+        if not hasattr(view_func, '_routablepage_routes'):
+            view_func._routablepage_routes = []
+
+        # Add new route to view
+        view_func._routablepage_routes.append((
+            path(pattern, view_func, name=(name or view_func.__name__)),
             _creation_counter,
         ))
 
