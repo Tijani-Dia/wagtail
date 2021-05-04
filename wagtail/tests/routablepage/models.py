@@ -21,6 +21,10 @@ class RoutablePageTest(RoutablePage):
     def archive_by_author(self, request, author_slug):
         return HttpResponse("ARCHIVE BY AUTHOR: " + author_slug)
 
+    @route('archive/title/<slug:title>/')
+    def archive_by_title(self, request, title):
+        return HttpResponse("ARCHIVE BY TITLE: " + title)
+
     @route(r'^external/(.+)/$')
     @route(r'^external-no-arg/$')
     def external_view(self, *args, **kwargs):
