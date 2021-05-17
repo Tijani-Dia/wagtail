@@ -1,6 +1,8 @@
 from django.http import Http404
 from django.template.response import TemplateResponse
-from django.urls import URLResolver, path, re_path
+from django.urls import URLResolver
+from django.urls import path as path_func
+from django.urls import re_path
 from django.urls.resolvers import RegexPattern
 
 from wagtail.core.models import Page
@@ -30,7 +32,7 @@ def route(pattern, name=None):
     return decorator
 
 
-def routex(pattern, name=None):
+def path(pattern, name=None):
     def decorator(view_func):
         global _creation_counter
         _creation_counter += 1
@@ -41,7 +43,7 @@ def routex(pattern, name=None):
 
         # Add new route to view
         view_func._routablepage_routes.append((
-            path(pattern, view_func, name=(name or view_func.__name__)),
+            path_func(pattern, view_func, name=(name or view_func.__name__)),
             _creation_counter,
         ))
 

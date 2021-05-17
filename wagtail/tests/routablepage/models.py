@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 
-from wagtail.contrib.routable_page.models import RoutablePage, route, routex
+from wagtail.contrib.routable_page.models import RoutablePage, path, route
 
 
 def routable_page_external_view(request, arg="ARG NOT SET"):
@@ -21,7 +21,7 @@ class RoutablePageTest(RoutablePage):
     def archive_by_author(self, request, author_slug):
         return HttpResponse("ARCHIVE BY AUTHOR: " + author_slug)
 
-    @routex('archive/title/<slug:title>/')
+    @path('archive/title/<slug:title>/')
     def archive_by_title(self, request, title):
         return HttpResponse("ARCHIVE BY TITLE: " + title)
 
