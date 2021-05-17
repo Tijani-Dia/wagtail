@@ -1,3 +1,5 @@
+import warnings
+
 from django.http import Http404
 from django.template.response import TemplateResponse
 from django.urls import URLResolver
@@ -40,6 +42,14 @@ def path(pattern, name=None):
         # Make sure page has _routablepage_routes attribute
         if not hasattr(view_func, '_routablepage_routes'):
             view_func._routablepage_routes = []
+
+        # Check if not using regex in path
+        if '(?P<' in pattern or pattern.startswith('^') or pattern.endswith('$'):
+            warnings.warn(
+                f"Your URL pattern {name or view_func.__name__} has a route that contains '(?P<',"
+                "begins with a '^', or ends with a '$'. This was likely an oversight "
+                "when migrating to wagtail.contrib.routable_page.path()."
+            )
 
         # Add new route to view
         view_func._routablepage_routes.append((
