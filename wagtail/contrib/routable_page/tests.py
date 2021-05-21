@@ -208,6 +208,10 @@ class TestRoutablePage(TestCase):
                 def foo(self, request):
                     pass
 
+                # To be compatible with wagtail.core.tests.tests_migrations
+                class Meta:
+                    managed = False
+
         msg = (
             "Your URL pattern foo has a route that contains '(?P<',"
             "begins with a '^', or ends with a '$'. This was likely an oversight "
