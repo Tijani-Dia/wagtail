@@ -4,7 +4,7 @@ from django.test import RequestFactory, TestCase
 from django.test.utils import override_settings
 from django.urls.exceptions import NoReverseMatch
 
-from wagtail.contrib.routable_page.models import path
+from wagtail.contrib.routable_page.models import RoutablePageMixin, path
 from wagtail.contrib.routable_page.templatetags.wagtailroutablepage_tags import routablepageurl
 from wagtail.core.models import Page, Site
 from wagtail.tests.routablepage.models import (
@@ -201,14 +201,15 @@ class TestRoutablePage(TestCase):
         finally:
             del RoutablePageTest.descriptor
 
-    def test_warning_path_with_regex(self):
-        view = mock.MagicMock(return_value='fake response')
+    def test_path_decorator_warning(self):
         with self.assertLogs(level='WARNING') as log_output:
-            decorated = path(r'^path/with/regex/$', name='path-with-regex')
-            decorated(view)
+            class RoutablePageWithBadRoute(RoutablePageMixin, Page):
+                @path('^/foo/')
+                def foo(self, request):
+                    pass
 
         msg = (
-            "Your URL pattern path-with-regex has a route that contains '(?P<',"
+            "Your URL pattern foo has a route that contains '(?P<',"
             "begins with a '^', or ends with a '$'. This was likely an oversight "
             "when migrating to wagtail.contrib.routable_page.path()."
         )
