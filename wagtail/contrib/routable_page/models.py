@@ -1,4 +1,4 @@
-import warnings
+import logging
 
 from django.http import Http404
 from django.template.response import TemplateResponse
@@ -12,6 +12,8 @@ from wagtail.core.url_routing import RouteResult
 
 
 _creation_counter = 0
+
+logger = logging.getLogger('wagtail.routablepage')
 
 
 def re_path(pattern, name=None):
@@ -46,9 +48,9 @@ def path(pattern, name=None):
         if not hasattr(view_func, '_routablepage_routes'):
             view_func._routablepage_routes = []
 
-        # Check if not using regex in path
+        # Check if not using regex with path decorator
         if '(?P<' in pattern or pattern.startswith('^') or pattern.endswith('$'):
-            warnings.warn(
+            logger.warning(
                 f"Your URL pattern {name or view_func.__name__} has a route that contains '(?P<',"
                 "begins with a '^', or ends with a '$'. This was likely an oversight "
                 "when migrating to wagtail.contrib.routable_page.path()."
