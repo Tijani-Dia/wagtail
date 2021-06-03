@@ -5,12 +5,29 @@ Changelog
 ~~~~~~~~~~~~~~~~~
 
  * Removed support for Django 2.2
- * Added ``ancestor_of`` API filter (Jaap Roes)
+ * Added `ancestor_of` API filter (Jaap Roes)
+ * Added support for customising group management views (Jan Seifert)
+ * Added `full_url` property to image renditions (Shreyash Srivastava)
+ * Added locale selector when choosing translatable snippets (Karl Hobley)
+ * Added `WAGTAIL_WORKFLOW_ENABLED` setting for enabling / disabling moderation workflows globally (Matt Westcott)
  * Fix: Invalid filter values for foreign key fields in the API now give an error instead of crashing (Tidjani Dia)
  * Fix: Ordering specified in `construct_explorer_page_queryset` hook is now taken into account again by the page explorer API (Andre Fonseca)
  * Fix: Deleting a page from its listing view no longer results in a 404 error (Tidjani Dia)
+ * Fix: The Wagtail admin urls will now respect the `APPEND_SLASH` setting (Tidjani Dia)
+ * Fix: Prevent “Forgotten password” link from overlapping with field on mobile devices (Helen Chapman)
+ * Fix: Snippet admin urls are now namespaced to avoid ambiguity with the primary key component of the url (Matt Westcott)
+ * Fix: Save order of promoted search results (Hardcodd)
 
-2.13 (xx.xx.xxxx) - IN DEVELOPMENT
+
+2.13.1 (01.06.2021)
+~~~~~~~~~~~~~~~~~~~
+
+ * Fix: Ensure comment notification checkbox is fully hidden when commenting is disabled (Karl Hobley)
+ * Fix: Prevent commenting from failing for user models with UUID primary keys (Jacob Topp-Mugglestone)
+ * Fix: Fix incorrect link in comment notification HTML email (Matt Westcott)
+
+
+2.13 (12.05.2021)
 ~~~~~~~~~~~~~~~~~
 
  * New StreamField implementation with performance and functionality improvements (Matt Westcott, Karl Hobley)

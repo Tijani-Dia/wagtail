@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from django import forms
 from django.apps import apps
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core import checks
@@ -2834,10 +2835,15 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
     @property
     def has_workflow(self):
         """Returns True if the page or an ancestor has an active workflow assigned, otherwise False"""
+        if not getattr(settings, 'WAGTAIL_WORKFLOW_ENABLED', True):
+            return False
         return self.get_ancestors(inclusive=True).filter(workflowpage__isnull=False).filter(workflowpage__workflow__active=True).exists()
 
     def get_workflow(self):
         """Returns the active workflow assigned to the page or its nearest ancestor"""
+        if not getattr(settings, 'WAGTAIL_WORKFLOW_ENABLED', True):
+            return None
+
         if hasattr(self, 'workflowpage') and self.workflowpage.workflow.active:
             return self.workflowpage.workflow
         else:
@@ -2851,11 +2857,15 @@ class Page(AbstractPage, index.Indexed, ClusterableModel, metaclass=PageBase):
     @property
     def workflow_in_progress(self):
         """Returns True if a workflow is in progress on the current page, otherwise False"""
+        if not getattr(settings, 'WAGTAIL_WORKFLOW_ENABLED', True):
+            return False
         return WorkflowState.objects.filter(page=self, status=WorkflowState.STATUS_IN_PROGRESS).exists()
 
     @property
     def current_workflow_state(self):
         """Returns the in progress or needs changes workflow state on this page, if it exists"""
+        if not getattr(settings, 'WAGTAIL_WORKFLOW_ENABLED', True):
+            return None
         try:
             return WorkflowState.objects.active().select_related("current_task_state__task").get(page=self)
         except WorkflowState.DoesNotExist:
@@ -3049,7 +3059,7 @@ class PageRevision(models.Model):
             page.live = False
         else:
             page.live = True
-            # at this point, the page has unpublished changes iff there are newer revisions than this one
+            # at this point, the page has unpublished changes if and only if there are newer revisions than this one
             page.has_unpublished_changes = not self.is_latest_revision()
             # If page goes live clear the approved_go_live_at of all revisions
             page.revisions.update(approved_go_live_at=None)
@@ -4693,7 +4703,23 @@ class TaskState(models.Model):
         verbose_name_plural = _('Task states')
 
 
+class LogEntryQuerySet(models.QuerySet):
+    def get_users(self):
+        """
+        Returns a QuerySet of Users who have created at least one log entry in this QuerySet.
+
+        The returned queryset is ordered by the username.
+        """
+        User = get_user_model()
+        return User.objects.filter(
+            pk__in=set(self.values_list('user__pk', flat=True))
+        ).order_by(User.USERNAME_FIELD)
+
+
 class BaseLogEntryManager(models.Manager):
+    def get_queryset(self):
+        return LogEntryQuerySet(self.model, using=self._db)
+
     def log_action(self, instance, action, **kwargs):
         """
         :param instance: The model instance we are logging an action for
@@ -4839,11 +4865,11 @@ class BaseLogEntry(models.Model):
     def object_id(self):
         raise NotImplementedError
 
-    @cached_property
-    def comment(self):
-        if self.data:
-            return self.data.get('comment', '')
-        return ''
+    def format_message(self):
+        return self.action_registry.format_message(self)
+
+    def format_comment(self):
+        return self.action_registry.format_comment(self)
 
 
 class PageLogEntry(BaseLogEntry):
@@ -4934,6 +4960,33 @@ class Comment(ClusterableModel):
                 return result
         return super().save(update_fields=update_fields, **kwargs)
 
+    def _log(self, action, page_revision=None, user=None):
+        PageLogEntry.objects.log_action(
+            instance=self.page,
+            action=action,
+            user=user,
+            revision=page_revision,
+            data={
+                'comment': {
+                    'id': self.pk,
+                    'contentpath': self.contentpath,
+                    'text': self.text,
+                }
+            }
+        )
+
+    def log_create(self, **kwargs):
+        self._log('wagtail.comments.create', **kwargs)
+
+    def log_edit(self, **kwargs):
+        self._log('wagtail.comments.edit', **kwargs)
+
+    def log_resolve(self, **kwargs):
+        self._log('wagtail.comments.resolve', **kwargs)
+
+    def log_delete(self, **kwargs):
+        self._log('wagtail.comments.delete', **kwargs)
+
 
 class CommentReply(models.Model):
     comment = ParentalKey(Comment, on_delete=models.CASCADE, related_name='replies')
@@ -4948,6 +5001,34 @@ class CommentReply(models.Model):
 
     def __str__(self):
         return "CommentReply left by '{0}': '{1}'".format(self.user, self.text)
+
+    def _log(self, action, page_revision=None, user=None):
+        PageLogEntry.objects.log_action(
+            instance=self.comment.page,
+            action=action,
+            user=user,
+            revision=page_revision,
+            data={
+                'comment': {
+                    'id': self.comment.pk,
+                    'contentpath': self.comment.contentpath,
+                    'text': self.comment.text,
+                },
+                'reply': {
+                    'id': self.pk,
+                    'text': self.text,
+                }
+            }
+        )
+
+    def log_create(self, **kwargs):
+        self._log('wagtail.comments.create_reply', **kwargs)
+
+    def log_edit(self, **kwargs):
+        self._log('wagtail.comments.edit_reply', **kwargs)
+
+    def log_delete(self, **kwargs):
+        self._log('wagtail.comments.delete_reply', **kwargs)
 
 
 class PageSubscription(models.Model):

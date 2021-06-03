@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.auth.views import redirect_to_login
 from django.urls import reverse
+from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 from django.utils.translation import ngettext
 
@@ -63,20 +64,20 @@ def register_collection_permissions():
     )
 
 
-@hooks.register('register_permissions')
-def register_workflow_permissions():
-    return Permission.objects.filter(
-        content_type__app_label='wagtailcore',
-        codename__in=['add_workflow', 'change_workflow', 'delete_workflow']
-    )
+if getattr(settings, 'WAGTAIL_WORKFLOW_ENABLED', True):
+    @hooks.register('register_permissions')
+    def register_workflow_permissions():
+        return Permission.objects.filter(
+            content_type__app_label='wagtailcore',
+            codename__in=['add_workflow', 'change_workflow', 'delete_workflow']
+        )
 
-
-@hooks.register('register_permissions')
-def register_task_permissions():
-    return Permission.objects.filter(
-        content_type__app_label='wagtailcore',
-        codename__in=['add_task', 'change_task', 'delete_task']
-    )
+    @hooks.register('register_permissions')
+    def register_task_permissions():
+        return Permission.objects.filter(
+            content_type__app_label='wagtailcore',
+            codename__in=['add_task', 'change_task', 'delete_task']
+        )
 
 
 @hooks.register('describe_collection_contents')
@@ -222,6 +223,92 @@ def register_core_log_actions(actions):
         except KeyError:
             return _('Renamed')
 
+    def _field_label_from_content_path(model, content_path):
+        """
+        Finds the translated field label for the given model and content path
+
+        Raises LookupError if not found
+        """
+        field_name = content_path.split('.')[0]
+        return capfirst(model._meta.get_field(field_name).verbose_name)
+
+    def create_comment_message(log_entry):
+        try:
+            return _('Added a comment on field %(field)s: "%(text)s"') % {
+                'field': _field_label_from_content_path(log_entry.page.specific_class, log_entry.data['comment']['contentpath']),
+                'text': log_entry.data['comment']['text'],
+            }
+        except KeyError:
+            return _('Added a comment')
+
+    create_comment_message.takes_log_entry = True
+
+    def edit_comment_message(log_entry):
+        try:
+            return _('Edited a comment on field %(field)s: "%(text)s"') % {
+                'field': _field_label_from_content_path(log_entry.page.specific_class, log_entry.data['comment']['contentpath']),
+                'text': log_entry.data['comment']['text'],
+            }
+        except KeyError:
+            return _("Edited a comment")
+
+    edit_comment_message.takes_log_entry = True
+
+    def delete_comment_message(log_entry):
+        try:
+            return _('Deleted a comment on field %(field)s: "%(text)s"') % {
+                'field': _field_label_from_content_path(log_entry.page.specific_class, log_entry.data['comment']['contentpath']),
+                'text': log_entry.data['comment']['text'],
+            }
+        except KeyError:
+            return _("Deleted a comment")
+
+    delete_comment_message.takes_log_entry = True
+
+    def resolve_comment_message(log_entry):
+        try:
+            return _('Resolved a comment on field %(field)s: "%(text)s"') % {
+                'field': _field_label_from_content_path(log_entry.page.specific_class, log_entry.data['comment']['contentpath']),
+                'text': log_entry.data['comment']['text'],
+            }
+        except KeyError:
+            return _("Resolved a comment")
+
+    resolve_comment_message.takes_log_entry = True
+
+    def create_reply_message(log_entry):
+        try:
+            return _('Replied to comment on field %(field)s: "%(text)s"') % {
+                'field': _field_label_from_content_path(log_entry.page.specific_class, log_entry.data['comment']['contentpath']),
+                'text': log_entry.data['reply']['text'],
+            }
+        except KeyError:
+            return _('Replied to a comment')
+
+    create_reply_message.takes_log_entry = True
+
+    def edit_reply_message(log_entry):
+        try:
+            return _('Edited a reply to a comment on field %(field)s: "%(text)s"') % {
+                'field': _field_label_from_content_path(log_entry.page.specific_class, log_entry.data['comment']['contentpath']),
+                'text': log_entry.data['reply']['text'],
+            }
+        except KeyError:
+            return _("Edited a reply")
+
+    edit_reply_message.takes_log_entry = True
+
+    def delete_reply_message(log_entry):
+        try:
+            return _('Deleted a reply to a comment on field %(field)s: "%(text)s"') % {
+                'field': _field_label_from_content_path(log_entry.page.specific_class, log_entry.data['comment']['contentpath']),
+                'text': log_entry.data['reply']['text'],
+            }
+        except KeyError:
+            return _("Deleted a reply")
+
+    delete_reply_message.takes_log_entry = True
+
     actions.register_action('wagtail.rename', _('Rename'), rename_message)
     actions.register_action('wagtail.revert', _('Revert'), revert_message)
     actions.register_action('wagtail.copy', _('Copy'), copy_message)
@@ -234,6 +321,13 @@ def register_core_log_actions(actions):
     actions.register_action('wagtail.view_restriction.create', _("Add view restrictions"), add_view_restriction)
     actions.register_action('wagtail.view_restriction.edit', _("Update view restrictions"), edit_view_restriction)
     actions.register_action('wagtail.view_restriction.delete', _("Remove view restrictions"), delete_view_restriction)
+    actions.register_action('wagtail.comments.create', _('Add comment'), create_comment_message)
+    actions.register_action('wagtail.comments.edit', _('Edit comment'), edit_comment_message)
+    actions.register_action('wagtail.comments.delete', _('Delete comment'), delete_comment_message)
+    actions.register_action('wagtail.comments.resolve', _('Resolve comment'), resolve_comment_message)
+    actions.register_action('wagtail.comments.create_reply', _('Reply to comment'), create_reply_message)
+    actions.register_action('wagtail.comments.edit_reply', _('Edit reply to comment'), edit_reply_message)
+    actions.register_action('wagtail.comments.delete_reply', _('Delete reply to comment'), delete_reply_message)
 
 
 @hooks.register('register_log_actions')
@@ -287,8 +381,11 @@ def register_workflow_log_actions(actions):
         except (KeyError, TypeError):
             return _('Workflow cancelled')
 
+    def workflow_comment(data):
+        return data.get('comment', '')
+
     actions.register_action('wagtail.workflow.start', _('Workflow: start'), workflow_start_message)
-    actions.register_action('wagtail.workflow.approve', _('Workflow: approve task'), workflow_approve_message)
-    actions.register_action('wagtail.workflow.reject', _('Workflow: reject task'), workflow_reject_message)
+    actions.register_action('wagtail.workflow.approve', _('Workflow: approve task'), workflow_approve_message, workflow_comment)
+    actions.register_action('wagtail.workflow.reject', _('Workflow: reject task'), workflow_reject_message, workflow_comment)
     actions.register_action('wagtail.workflow.resume', _('Workflow: resume task'), workflow_resume_message)
     actions.register_action('wagtail.workflow.cancel', _('Workflow: cancel'), workflow_cancel_message)

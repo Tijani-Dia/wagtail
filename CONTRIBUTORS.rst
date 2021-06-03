@@ -514,6 +514,8 @@ Contributors
 * Ihor Marhitych
 * Andre Fonseca
 * Tidjani Dia
+* Jan Seifert
+* hardcodd
 
 Translators
 ===========
@@ -529,7 +531,7 @@ Translators
 * Burmese: ime11
 * Catalan: Antoni Aloy, David Llop, Roger Pons
 * Chinese: hanfeng, Lihan Li, Leway Colin, Orangle Liu, shengsheng gz
-* Chinese (Simplified): Ed, hanfeng, Fan Hei, GH Y, Yi Huang, Daniel Hwang, Jian Li, Aosp T, Listeng Teng, Feng Wang, whuim, Fred Zeng, Joey Zhao, Vincent Zhao, zhushajun
+* Chinese (Simplified): Ed, Yin Guanhao, hanfeng, Fan Hei, Yi Huang, Daniel Hwang, Jian Li, Aosp T, Listeng Teng, Feng Wang, whuim, Fred Zeng, Joey Zhao, Vincent Zhao, zhushajun
 * Chinese (Traditional): gogobook, Andy Kong, Lihan Li, Ocin Leung, ongchi, Jp Shieh, Yeh Yen-Ke, Yu Hsun Lee
 * Croatian (Croatia): Dino Aljević, Marko Burazin, Ivica Dosen, Luka Matijević
 * Czech: Ales Dvorak, Martin Galda, IT Management, Tomáš Jeřábek, Vláďa Macek, Eva Mikesova, Mořeplavec, Sophy O, Martina Oleksakova, Krystof Pilnacek, Ivan Pomykacz, Jiri Stepanek, Marek Turnovec, Mirek Zvolský
@@ -541,15 +543,15 @@ Translators
 * French: Adrien, Timothy Allen, Sebastien Andrivet, Bertrand Bordage, André Bouatchidzé, Aurélien Debord, Romain Dorgueil, Tom Dyson, Antonin Enfrun, Axel Haustant, Fabien Heureux, Léo, Pierre Marfoure, nahuel, Sophy O, Dominique Peretti, fpoulain, Loïc Teixeira, Benoît Vogel
 * Galician: Amós Oviedo
 * Georgian: André Bouatchidzé
-* German: Ettore Atalan, Bohreromir, Benedikt Breinbauer, Patrick Craston, Peter Dreuw, Patrick Hebner, Benjamin Kaspar, Henrik Kröger, Tibor L, Tammo van Lessen, Martin Löhle, Wasilis Mandratzis-Walz, Daniel Manser, Matthias Martin, m0rph3u5, Max Pfeiffer, Moritz Pfeiffer, Herbert Poul, Karl Sander, Tobias Schmidt, Scriptim, Johannes Spielmann, Raphael Stolt, Benjamin Thurm, Norman Uekermann, Jannis Vajen, Vorlif, Matthew Westcott, Benedikt Willi
+* German: Ettore Atalan, Bohreromir, Benedikt Breinbauer, Patrick Craston, Peter Dreuw, Oliver Engel, Patrick Hebner, Benjamin Kaspar, Henrik Kröger, Tibor L, Tammo van Lessen, Martin Löhle, Wasilis Mandratzis-Walz, Daniel Manser, Matthias Martin, m0rph3u5, Max Pfeiffer, Moritz Pfeiffer, Herbert Poul, Karl Sander, Tobias Schmidt, Scriptim, Johannes Spielmann, Raphael Stolt, Benjamin Thurm, Norman Uekermann, Jannis Vajen, Vorlif, Matthew Westcott, Benedikt Willi
 * Greek: Jim Dal, George Giannoulopoulos, Yiannis Inglessis, Wasilis Mandratzis-Walz, Nick Mavrakis, NeotheOne, Serafeim Papastefanos
 * Haitian: Hantz Vius
 * Hebrew (Israel): Lior Abazon, bjesus, Yossi Lalum, Men770, Adi Ron, Oleg Sverdlov
 * Hungarian: Istvan Farkas, Laszlo Molnar, Kornél Novák Mergulhão, BN, Aron Santa
 * Icelandic (Iceland): Arnar Tumi Þorsteinsson, Kjartan Sverrisson, Sævar Öfjörð Magnússon
 * Indonesian (Indonesia): atmosuwiryo, Sutrisno Efendi, Dzikri Hakim, Reshi Mahendra, Geek Pantura, Andry Widya Putra, Ronggo Radityo, M. Febrian Ramadhana
-* Italian: Sandro Badalamenti, Edd Baldry, Claudio Bantaloukas, Guglielmo Celata, Gian-Maria Daffre, Giacomo Ghizzani, LB (Ben Johnston), Stefano Marchetto, Carlo Miron, Alessio Di Stasio, Andrea Tagliazucchi
-* Japanese: Sangmin Ahn, Shuhei Hirota, Shu Ishida, Yudai Kobayashi, Tri Minh, Tetsuya Morimoto, Hideaki Oguchi, Tomo Mizoe, Safu9, Kinoshita Shinji, Daigo Shitara, Shimizu Taku, umepon0626, Takuya Yamamoto
+* Italian: Sandro Badalamenti, Edd Baldry, Claudio Bantaloukas, Guglielmo Celata, Gian-Maria Daffre, Giacomo Ghizzani, LB (Ben Johnston), Marco Lerco, Stefano Marchetto, Carlo Miron, Alessio Di Stasio, Andrea Tagliazucchi
+* Japanese: Sangmin Ahn, Shuhei Hirota, Shu Ishida, Yudai Kobayashi, Tri Minh, Koji Miyazawa, Tetsuya Morimoto, Hideaki Oguchi, Tomo Mizoe, Safu9, Kinoshita Shinji, Daigo Shitara, Shimizu Taku, umepon0626, Takuya Yamamoto
 * Korean: Kyungil Choi, Jihan Chung
 * Latvian: Reinis Rozenbergs, Maris Serzans
 * Lithuanian: Matas Dailyda, Naglis Jonaitis

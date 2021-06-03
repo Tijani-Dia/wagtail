@@ -14,6 +14,10 @@ Other features
 ~~~~~~~~~~~~~~
 
  * Added ``ancestor_of`` API filter. See :ref:`apiv2_filter_by_tree_position`. (Jaap Roes)
+ * Added support for customising group management views. See :ref:`customising_group_views`. (Jan Seifert)
+ * Added ``full_url`` property to image renditions (Shreyash Srivastava)
+ * Added locale selector when choosing translatable snippets (Karl Hobley)
+ * Added ``WAGTAIL_WORKFLOW_ENABLED`` setting for enabling / disabling moderation workflows globally (Matt Westcott)
 
 Bug fixes
 ~~~~~~~~~
@@ -21,6 +25,9 @@ Bug fixes
  * Invalid filter values for foreign key fields in the API now give an error instead of crashing (Tidjani Dia)
  * Ordering specified in the ``construct_explorer_page_queryset`` hook is now taken into account again by the page explorer API (Andre Fonseca)
  * Deleting a page from its listing view no longer results in a 404 error (Tidjani Dia)
+ * The Wagtail admin urls will now respect the ``APPEND_SLASH`` setting (Tidjani Dia)
+ * Prevent “Forgotten password” link from overlapping with field on mobile devices (Helen Chapman)
+ * Snippet admin urls are now namespaced to avoid ambiguity with the primary key component of the url (Matt Westcott)
 
 Upgrade considerations
 ======================
