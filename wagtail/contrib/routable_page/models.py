@@ -1,11 +1,14 @@
 import logging
 
+from functools import partial
+
+from django.core.checks import Warning
 from django.http import Http404
 from django.template.response import TemplateResponse
 from django.urls import URLResolver
 from django.urls import path as path_func
 from django.urls import re_path as re_path_func
-from django.urls.resolvers import RegexPattern
+from django.urls.resolvers import RegexPattern, RoutePattern
 
 from wagtail.core.models import Page
 from wagtail.core.url_routing import RouteResult
@@ -16,7 +19,7 @@ _creation_counter = 0
 logger = logging.getLogger('wagtail.routablepage')
 
 
-def re_path(pattern, name=None):
+def _path(pattern, name=None, func=None):
     def decorator(view_func):
         global _creation_counter
         _creation_counter += 1
@@ -27,7 +30,7 @@ def re_path(pattern, name=None):
 
         # Add new route to view
         view_func._routablepage_routes.append((
-            re_path_func(pattern, view_func, name=(name or view_func.__name__)),
+            func(pattern, view_func, name=(name or view_func.__name__)),
             _creation_counter,
         ))
 
@@ -36,35 +39,11 @@ def re_path(pattern, name=None):
     return decorator
 
 
+re_path = partial(_path, func=re_path_func)
+path = partial(_path, func=path_func)
+
+# Make route an alias of re_path for backwards compatibility.
 route = re_path
-
-
-def path(pattern, name=None):
-    def decorator(view_func):
-        global _creation_counter
-        _creation_counter += 1
-
-        # Make sure page has _routablepage_routes attribute
-        if not hasattr(view_func, '_routablepage_routes'):
-            view_func._routablepage_routes = []
-
-        # Check if not using regex with path decorator
-        if '(?P<' in pattern or pattern.startswith('^') or pattern.endswith('$'):
-            logger.warning(
-                f"Your URL pattern {name or view_func.__name__} has a route that contains '(?P<',"
-                "begins with a '^', or ends with a '$'. This was likely an oversight "
-                "when migrating to wagtail.contrib.routable_page.path()."
-            )
-
-        # Add new route to view
-        view_func._routablepage_routes.append((
-            path_func(pattern, view_func, name=(name or view_func.__name__)),
-            _creation_counter,
-        ))
-
-        return view_func
-
-    return decorator
 
 
 class RoutablePageMixin:
@@ -110,6 +89,37 @@ class RoutablePageMixin:
             cls._routablepage_urlresolver = URLResolver(RegexPattern(r'^/'), subpage_urls)
 
         return cls._routablepage_urlresolver
+
+    @classmethod
+    def check(cls, **kwargs):
+        errors = super().check(**kwargs)
+        errors.extend(cls._check_path_with_regex())
+        return errors
+
+    @classmethod
+    def _check_path_with_regex(cls):
+        routes = cls.get_subpage_urls()
+        errors = []
+        for route in routes:
+            if isinstance(route.pattern, RoutePattern):
+                pattern = route.pattern._route
+                if (
+                    "(?P<" in pattern
+                    or pattern.startswith("^")
+                    or pattern.endswith("$")
+                ):
+                    errors.append(
+                        Warning(
+                            (
+                                f"Your URL pattern {route.name or route.callback.__name__} has a "
+                                "route that contains '(?P<', begins with a '^', or ends with a '$'."
+                            ),
+                            hint="Decorate your view with re_path if you want to use regexp.",
+                            obj=cls,
+                            id="wagtail.contrib.routable_page",
+                        )
+                    )
+        return errors
 
     def reverse_subpage(self, name, args=None, kwargs=None):
         """
