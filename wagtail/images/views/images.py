@@ -103,7 +103,8 @@ class BaseListingView(TemplateView):
             except (AttributeError):
                 self.current_tag = None
 
-        paginator = Paginator(images, per_page=INDEX_PAGE_SIZE)
+        entries_per_page = int(self.request.GET.get("entries_per_page", INDEX_PAGE_SIZE))
+        paginator = Paginator(images, per_page=entries_per_page)
         images = paginator.get_page(self.request.GET.get("p"))
 
         next_url = reverse("wagtailimages:index")
@@ -119,6 +120,8 @@ class BaseListingView(TemplateView):
                 "next": next_url,
                 "current_ordering": ordering,
                 "ORDERING_OPTIONS": self.ORDERING_OPTIONS,
+                "entries_per_page": entries_per_page,
+                "ENTRIES_PER_PAGE_CHOICES": sorted({10, 25, 100, entries_per_page})
             }
         )
 

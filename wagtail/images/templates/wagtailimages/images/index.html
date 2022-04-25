@@ -66,6 +66,21 @@
                         </div>
                     </div>
                 </li>
+                <li>
+                    <div class="field choice_field select">
+                        <label for="entries_per_page">{% trans "Entries per page" %}:</label>
+                        <div class="field-content">
+                            <div class="input">
+                                <select id="entries_per_page" name="entries_per_page">
+                                    {% for value in ENTRIES_PER_PAGE_CHOICES %}
+                                        <option value="{{ value }}" {% if entries_per_page == value %}selected="selected"{% endif %}>{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+                </li>
                 {% if popular_tags %}
                     <li>
                         <fieldset class="tagfilter">
