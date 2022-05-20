@@ -11,7 +11,7 @@ from django.template.loader import render_to_string
 from django.template.response import TemplateResponse
 
 from wagtail import hooks
-from wagtail.admin.navigation import get_site_for_user
+from wagtail.admin.navigation import get_site_for_request
 from wagtail.admin.site_summary import SiteSummaryPanel
 from wagtail.admin.ui.components import Component
 from wagtail.models import (
@@ -218,7 +218,7 @@ def home(request):
     for panel in panels:
         media += panel.media
 
-    site_details = get_site_for_user(request.user)
+    site_details = get_site_for_request(request)
 
     return TemplateResponse(
         request,

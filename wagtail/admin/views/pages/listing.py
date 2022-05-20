@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from wagtail import hooks
 from wagtail.admin.auth import user_has_any_page_permission, user_passes_test
-from wagtail.admin.navigation import get_explorable_root_page
+from wagtail.admin.navigation import get_explorable_root_page_for_request
 from wagtail.models import Page, UserPagePermissionsProxy
 
 
@@ -19,7 +19,7 @@ def index(request, parent_page_id=None):
         parent_page = Page.get_first_root_node()
 
     # This will always succeed because of the @user_passes_test above.
-    root_page = get_explorable_root_page(request.user)
+    root_page = get_explorable_root_page_for_request(request)
 
     # If this page isn't a descendant of the user's explorable root page,
     # then redirect to that explorable root page instead.

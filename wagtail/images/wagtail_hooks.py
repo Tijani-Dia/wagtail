@@ -11,7 +11,7 @@ from wagtail.admin.admin_url_finder import (
     register_admin_url_finder,
 )
 from wagtail.admin.menu import MenuItem
-from wagtail.admin.navigation import get_site_for_user
+from wagtail.admin.navigation import get_site_for_request
 from wagtail.admin.search import SearchArea
 from wagtail.admin.site_summary import SummaryItem
 from wagtail.images import admin_urls, get_image_model, image_operations
@@ -136,7 +136,7 @@ class ImagesSummaryItem(SummaryItem):
     template_name = "wagtailimages/homepage/site_summary_images.html"
 
     def get_context_data(self, parent_context):
-        site_name = get_site_for_user(self.request.user)["site_name"]
+        site_name = get_site_for_request(self.request)["site_name"]
 
         return {
             "total_images": get_image_model().objects.count(),

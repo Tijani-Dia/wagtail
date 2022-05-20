@@ -30,7 +30,7 @@ class _AssertNumDuplicateQueriesContext(CaptureQueriesContext):
             sorted(duplicates.items(), key=lambda item: item[1], reverse=True)
         )
 
-        total = f"\nTotal of {(sum(a[1] for a in duplicates.items())) - len(duplicates)} queries.\n"
+        total = f"\nTotal of {(sum(a[1] for a in duplicates.items())) - len(duplicates)} unnecessary queries.\n"
 
         self.test_case.assertEqual(
             len(duplicates),
@@ -60,8 +60,7 @@ class TestDuplicateQueries(TestCase, WagtailTestUtils):
 
     def test_duplicate_queries(self):
         views = (
-            
-            ("wagtailadmin_pages:edit", (self.events_index.id,)),
+            ("wagtailadmin_home", ()),
         )
         for name, args in views:
             with self.subTest(name=name):

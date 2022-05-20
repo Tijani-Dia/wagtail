@@ -58,7 +58,9 @@ class Menu:
         return self._registered_menu_items
 
     def menu_items_for_request(self, request):
-        items = [item for item in self.registered_menu_items if item.is_shown(request)]
+        items = self._registered_menu_items
+        if items is None:
+            items = [item for item in self.registered_menu_items if item.is_shown(request)]
 
         # provide a hook for modifying the menu, if construct_hook_name has been set
         if self.construct_hook_name:

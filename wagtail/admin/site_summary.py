@@ -2,7 +2,7 @@ from django.forms import Media
 
 from wagtail import hooks
 from wagtail.admin.auth import user_has_any_page_permission
-from wagtail.admin.navigation import get_site_for_user
+from wagtail.admin.navigation import get_site_for_request
 from wagtail.admin.ui.components import Component
 from wagtail.models import Page, Site
 
@@ -22,7 +22,7 @@ class PagesSummaryItem(SummaryItem):
     template_name = "wagtailadmin/home/site_summary_pages.html"
 
     def get_context_data(self, parent_context):
-        site_details = get_site_for_user(self.request.user)
+        site_details = get_site_for_request(self.request)
         root_page = site_details["root_page"]
         site_name = site_details["site_name"]
 

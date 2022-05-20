@@ -13,7 +13,7 @@ from wagtail.admin.admin_url_finder import (
     register_admin_url_finder,
 )
 from wagtail.admin.menu import MenuItem
-from wagtail.admin.navigation import get_site_for_user
+from wagtail.admin.navigation import get_site_for_request
 from wagtail.admin.search import SearchArea
 from wagtail.admin.site_summary import SummaryItem
 from wagtail.documents import admin_urls, get_document_model
@@ -108,7 +108,7 @@ class DocumentsSummaryItem(SummaryItem):
     template_name = "wagtaildocs/homepage/site_summary_documents.html"
 
     def get_context_data(self, parent_context):
-        site_name = get_site_for_user(self.request.user)["site_name"]
+        site_name = get_site_for_request(self.request)["site_name"]
 
         return {
             "total_docs": get_document_model().objects.count(),
