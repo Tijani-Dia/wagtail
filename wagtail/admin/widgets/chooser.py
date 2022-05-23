@@ -151,6 +151,7 @@ class AdminPageChooser(AdminChooser):
         else:  # assume page ID
             model_class = self._get_lowest_common_page_class()
             try:
+                print(value)
                 page = model_class.objects.get(pk=value)
             except model_class.DoesNotExist:
                 return None

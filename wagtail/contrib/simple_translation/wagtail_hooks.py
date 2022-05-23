@@ -53,6 +53,7 @@ def page_listing_more_buttons(page, page_perms, is_parent=False, next_url=None):
         page_perms.user.has_perm("simple_translation.submit_translation")
         and not page.is_root()
     ):
+        print("here")
         # If there's at least one locale that we haven't translated into yet, show "Translate this page" button
         has_locale_to_translate_to = Locale.objects.exclude(
             id__in=page.get_translations(inclusive=True).values_list(

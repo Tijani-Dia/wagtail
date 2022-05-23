@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.core.paginator import Paginator
-from django.db.models import Count
+from django.db.models import Count, OuterRef, Subquery
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -8,7 +8,7 @@ from django.urls import reverse
 from wagtail import hooks
 from wagtail.admin.auth import user_has_any_page_permission, user_passes_test
 from wagtail.admin.navigation import get_explorable_root_page_for_request
-from wagtail.models import Page, UserPagePermissionsProxy
+from wagtail.models import Page, UserPagePermissionsProxy, Locale
 
 
 @user_passes_test(user_has_any_page_permission)
@@ -85,6 +85,15 @@ def index(request, parent_page_id=None):
         pages = pages.prefetch_workflow_states()
 
     pages = pages.annotate_site_root_state().annotate_approved_schedule()
+    has_locale_to_translate_to = Locale.objects.annotate(page=OuterRef('pk')).exclude(
+        id__in=page.get_translations(inclusive=True).values_list(
+            "locale_id", flat=True
+        )
+    ).exists()
+    pages = pages.annotate(
+        has_locale_to_translate_to=Subquery(has_locale_to_translate_to)
+    )
+    breakpoint()
 
     # Pagination
     if do_paginate:

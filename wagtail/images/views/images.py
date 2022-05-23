@@ -48,6 +48,7 @@ class BaseListingView(TemplateView):
             )
             .order_by("-created_at")
             .select_related("collection")
+            .prefetch_related("renditions")
         )
 
         # Search
@@ -139,7 +140,7 @@ def edit(request, image_id):
     Image = get_image_model()
     ImageForm = get_image_form(Image)
 
-    image = get_object_or_404(Image, id=image_id)
+    image = get_object_or_404(Image.objects.prefetch_related("renditions"), id=image_id)
 
     if not permission_policy.user_has_permission_for_instance(
         request.user, "change", image
