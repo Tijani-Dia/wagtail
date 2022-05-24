@@ -2,5 +2,57 @@
 @import '../../../../../client/scss/tools';
 
 .fields {
-    max-width: 1100px;
+    max-width: none;
+
+    @include media-breakpoint-up(lg) {
+        .field-col {
+            float: left;
+            padding-inline-start: 0;
+        
+            // anything less than 4 columns or greater than 6 is impractical
+            &.col4.kk {
+            label {
+                @include column(1, 0, 4);
+            }
+        
+            .field-content {
+                @include column(3, $padding, 4);
+                padding-inline-start: 0;
+                padding-inline-end: max(1.5%, 40px);
+            }
+            }
+        }
+    }
+
+    @include media-breakpoint-up(sm) {
+    .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            column-gap: 2%;
+            padding-bottom: 0.25em;
+
+            label {
+                width: auto;
+            }
+
+            .field-content {
+                width: auto;
+            }
+        }
+    }
+
+    .tagfilter legend {
+        width: auto;
+    }
+
+    fieldset {
+        padding: 0 0 1em;
+    }
+}
+
+.listing {
+    &.horiz {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
 }
