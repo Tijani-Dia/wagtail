@@ -2910,13 +2910,19 @@ class UserPagePermissionsProxy:
     """Helper object that encapsulates all the page permission rules that this user has
     across the page hierarchy."""
 
-    def __init__(self, user):
-        self.user = user
+    def __new__(cls, user):
+        if not hasattr(user, "_page_permissions_proxy"):
+            instance = super().__new__(cls)
+            instance.user = user
 
-        if user.is_active and not user.is_superuser:
-            self.permissions = GroupPagePermission.objects.filter(
-                group__user=self.user
-            ).select_related("page")
+            if user.is_active and not user.is_superuser:
+                instance.permissions = GroupPagePermission.objects.filter(
+                    group__user=user
+                ).select_related("page")
+
+            setattr(user, "_page_permissions_proxy", instance)
+
+        return getattr(user, "_page_permissions_proxy")
 
     def revisions_for_moderation(self):
         """Return a queryset of page revisions awaiting moderation that this user has publish permission on"""
