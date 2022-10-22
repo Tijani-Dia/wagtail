@@ -68,6 +68,7 @@ from wagtail.coreutils import (
     WAGTAIL_APPEND_SLASH,
     camelcase_to_underscore,
     get_supported_content_language_variant,
+    lazy_property,
     resolve_model_string,
 )
 from wagtail.fields import StreamField
@@ -2924,7 +2925,8 @@ class UserPagePermissionsProxy:
 
         return getattr(user, "_page_permissions_proxy")
 
-    def revisions_for_moderation(self):
+    @lazy_property
+    def _revisions_for_moderation(self):
         """Return a queryset of page revisions awaiting moderation that this user has publish permission on"""
 
         # Deal with the trivial cases first...
@@ -2956,12 +2958,16 @@ class UserPagePermissionsProxy:
             )
         )
 
+    def revisions_for_moderation(self):
+        return self._revisions_for_moderation
+
     def for_page(self, page):
         """Return a PagePermissionTester object that can be used to query whether this user has
         permission to perform specific tasks on the given page"""
         return PagePermissionTester(self, page)
 
-    def explorable_pages(self):
+    @lazy_property
+    def _explorable_pages(self):
         """Return a queryset of pages that the user has access to view in the
         explorer (e.g. add/edit/publish permission). Includes all pages with
         specific group permissions and also the ancestors of those pages (in
@@ -2999,7 +3005,11 @@ class UserPagePermissionsProxy:
 
         return explorable_pages
 
-    def editable_pages(self):
+    def explorable_pages(self):
+        return self._explorable_pages
+
+    @lazy_property
+    def _editable_pages(self):
         """Return a queryset of the pages that this user has permission to edit"""
         # Deal with the trivial cases first...
         if not self.user.is_active:
@@ -3023,11 +3033,15 @@ class UserPagePermissionsProxy:
 
         return editable_pages
 
+    def editable_pages(self):
+        return self._editable_pages
+
     def can_edit_pages(self):
         """Return True if the user has permission to edit any pages"""
-        return self.editable_pages().exists()
+        return bool(self._editable_pages)
 
-    def publishable_pages(self):
+    @lazy_property
+    def _publishable_pages(self):
         """Return a queryset of the pages that this user has permission to publish"""
         # Deal with the trivial cases first...
         if not self.user.is_active:
@@ -3044,9 +3058,12 @@ class UserPagePermissionsProxy:
 
         return publishable_pages
 
+    def publishable_pages(self):
+        return self._publishable_pages
+
     def can_publish_pages(self):
         """Return True if the user has permission to publish any pages"""
-        return self.publishable_pages().exists()
+        return bool(self._publishable_pages)
 
     def can_remove_locks(self):
         """Returns True if the user has permission to unlock pages they have not locked"""
