@@ -10,10 +10,13 @@ as Page.
 """
 
 import functools
+import itertools
 import logging
 import uuid
 import warnings
+from collections import defaultdict
 from io import StringIO
+from operator import attrgetter
 from urllib.parse import urlparse
 
 from django import forms
@@ -2917,13 +2920,35 @@ class UserPagePermissionsProxy:
             instance.user = user
 
             if user.is_active and not user.is_superuser:
-                instance.permissions = GroupPagePermission.objects.filter(
+                perms_by_type = defaultdict(list)
+                perm_types = set()
+                permissions = GroupPagePermission.objects.filter(
                     group__user=user
                 ).select_related("page")
+
+                for perm in permissions:
+                    perm_type = perm.permission_type
+                    perms_by_type[perm_type].append(perm)
+                    perm_types.add(perm_type)
+
+                instance.perms_by_type = perms_by_type
+                instance.perm_types = perm_types
 
             setattr(user, "_page_permissions_proxy", instance)
 
         return getattr(user, "_page_permissions_proxy")
+
+    def get_permissions_by_type(self, perm_type):
+        return self.perms_by_type.get(perm_type, [])
+
+    def get_permissions(self, perm_types):
+        return itertools.chain.from_iterable(
+            self.get_permissions_by_type(perm_type) for perm_type in perm_types
+        )
+
+    @property
+    def permissions(self):
+        return self.get_permissions(self.perm_types)
 
     @lazy_property
     def _revisions_for_moderation(self):
@@ -2937,10 +2962,8 @@ class UserPagePermissionsProxy:
 
         # get the list of pages for which they have direct publish permission
         # (i.e. they can publish any page within this subtree)
-        publishable_pages_paths = (
-            self.permissions.filter(permission_type="publish")
-            .values_list("page__path", flat=True)
-            .distinct()
+        publishable_pages_paths = list(
+            set(perm.page.path for perm in self.get_permissions_by_type("publish"))
         )
         if not publishable_pages_paths:
             return Revision.objects.none()
@@ -2982,12 +3005,7 @@ class UserPagePermissionsProxy:
 
         # Creates a union queryset of all objects the user has access to add,
         # edit and publish
-        for perm in self.permissions.filter(
-            Q(permission_type="add")
-            | Q(permission_type="edit")
-            | Q(permission_type="publish")
-            | Q(permission_type="lock")
-        ):
+        for perm in self.get_permissions(["add", "edit", "publish", "lock"]):
             explorable_pages |= Page.objects.descendant_of(perm.page, inclusive=True)
 
         # For all pages with specific permissions, add their ancestors as
@@ -3019,14 +3037,14 @@ class UserPagePermissionsProxy:
 
         editable_pages = Page.objects.none()
 
-        for perm in self.permissions.filter(permission_type="add"):
+        for perm in self.get_permissions_by_type("add"):
             # user has edit permission on any subpage of perm.page
             # (including perm.page itself) that is owned by them
             editable_pages |= Page.objects.descendant_of(
                 perm.page, inclusive=True
             ).filter(owner=self.user)
 
-        for perm in self.permissions.filter(permission_type="edit"):
+        for perm in self.get_permissions_by_type("edit"):
             # user has edit permission on any subpage of perm.page
             # (including perm.page itself) regardless of owner
             editable_pages |= Page.objects.descendant_of(perm.page, inclusive=True)
@@ -3051,7 +3069,7 @@ class UserPagePermissionsProxy:
 
         publishable_pages = Page.objects.none()
 
-        for perm in self.permissions.filter(permission_type="publish"):
+        for perm in self.get_permissions_by_type("publish"):
             # user has publish permission on any subpage of perm.page
             # (including perm.page itself)
             publishable_pages |= Page.objects.descendant_of(perm.page, inclusive=True)
@@ -3072,7 +3090,7 @@ class UserPagePermissionsProxy:
         if not self.user.is_active:
             return False
         else:
-            return self.permissions.filter(permission_type="unlock").exists()
+            return "unlock" in self.perm_types
 
 
 class PagePermissionTester:
