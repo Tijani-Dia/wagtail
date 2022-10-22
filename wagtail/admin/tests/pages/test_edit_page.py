@@ -1735,6 +1735,13 @@ class TestPageEdit(TestCase, WagtailTestUtils):
                 reverse("wagtailadmin_pages:edit", args=(self.event_page.id,))
             )
 
+        self.as_editor()
+        self.client.get(reverse("wagtailadmin_pages:edit", args=(self.event_page.id,)))
+        with self.assertNumQueries(64):
+            self.client.get(
+                reverse("wagtailadmin_pages:edit", args=(self.event_page.id,))
+            )
+
 
 class TestPageEditReordering(TestCase, WagtailTestUtils):
     def setUp(self):
