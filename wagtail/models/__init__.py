@@ -2946,11 +2946,15 @@ class UserPagePermissionsProxy:
         )
 
     def get_pages(self, perm_types):
-        return (perm.page for perm in self.get_permissions(perm_types))
+        return {perm.page for perm in self.get_permissions(perm_types)}
 
     @property
     def permissions(self):
         return self.get_permissions(self.perm_types)
+
+    @property
+    def pages(self):
+        return self.get_pages(self.perm_types)
 
     def has_any_page_permission(self):
         return bool(self.perms_by_type)
@@ -3037,23 +3041,20 @@ class UserPagePermissionsProxy:
 
         # Creates a union queryset of all objects the user has access to add,
         # edit and publish
-        for perm in self.get_permissions(["add", "edit", "publish", "lock"]):
-            explorable_pages |= Page.objects.descendant_of(perm.page, inclusive=True)
+        for page in self.get_pages(["add", "edit", "publish", "lock"]):
+            explorable_pages |= Page.objects.descendant_of(page, inclusive=True)
 
         # For all pages with specific permissions, add their ancestors as
         # explorable. This will allow deeply nested pages to be accessed in the
         # explorer. For example, in the hierarchy A>B>C>D where the user has
         # 'edit' access on D, they will be able to navigate to D without having
         # explicit access to A, B or C.
-        page_permissions = Page.objects.filter(group_permissions__in=self.permissions)
-        for page in page_permissions:
+        for page in self.pages:
             explorable_pages |= page.get_ancestors()
 
         # Remove unnecessary top-level ancestors that the user has no access to
-        fca_page = page_permissions.first_common_ancestor()
-        explorable_pages = explorable_pages.filter(path__startswith=fca_page.path)
-
-        return explorable_pages
+        fca_page = first_common_ancestor(self.pages)
+        return explorable_pages.filter(path__startswith=fca_page.path)
 
     def explorable_pages(self):
         return self._explorable_pages
