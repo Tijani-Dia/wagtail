@@ -2920,20 +2920,21 @@ class UserPagePermissionsProxy:
             self.user = user
 
             if user.is_active and not user.is_superuser:
-                qs = GroupPagePermission.objects.filter(group__user=user)
+                prefetch_user_perms = Prefetch(
+                    "group_permissions",
+                    queryset=GroupPagePermission.objects.filter(group__user=user),
+                    to_attr="_perms_for_user",
+                )
                 self._pages = (
                     Page.objects.filter(
                         group_permissions__group__user=user,
                     )
-                    .prefetch_related(
-                        Prefetch(
-                            "group_permissions", queryset=qs, to_attr="_perms_for_user"
-                        )
-                    )
+                    .prefetch_related(prefetch_user_perms)
                     .distinct()
                     .in_bulk()
                 )
                 self.perm_types = defaultdict(set)
+
                 for page_pk, page in self._pages.items():
                     page._perms_for_user = frozenset(
                         perm.permission_type for perm in page._perms_for_user
