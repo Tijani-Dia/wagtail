@@ -70,7 +70,6 @@ from wagtail.coreutils import (
     WAGTAIL_APPEND_SLASH,
     camelcase_to_underscore,
     get_supported_content_language_variant,
-    lazy_property,
     resolve_model_string,
 )
 from wagtail.fields import StreamField
@@ -2961,7 +2960,7 @@ class UserPagePermissionsProxy:
     def has_any_page_permission(self):
         return bool(self.perms_by_type)
 
-    @lazy_property
+    @cached_property
     def _pages_with_direct_explore_permission(self):
         # Get all pages that the user has direct add/edit/publish/lock permission on
         if self.user.is_superuser:
@@ -2973,7 +2972,7 @@ class UserPagePermissionsProxy:
     def pages_with_direct_explore_permission(self):
         return self._pages_with_direct_explore_permission
 
-    @lazy_property
+    @cached_property
     def _explorable_root_page(self):
         # Get the highest common explorable ancestor for the given user. If the user
         # has no permissions over any pages, this method will return None.
@@ -2988,7 +2987,7 @@ class UserPagePermissionsProxy:
     def explorable_root_page(self):
         return self._explorable_root_page
 
-    @lazy_property
+    @cached_property
     def _revisions_for_moderation(self):
         """Return a queryset of page revisions awaiting moderation that this user has publish permission on"""
 
@@ -3027,7 +3026,7 @@ class UserPagePermissionsProxy:
         permission to perform specific tasks on the given page"""
         return PagePermissionTester(self, page)
 
-    @lazy_property
+    @cached_property
     def _explorable_pages(self):
         """Return a queryset of pages that the user has access to view in the
         explorer (e.g. add/edit/publish permission). Includes all pages with
@@ -3065,7 +3064,7 @@ class UserPagePermissionsProxy:
         """Return True if the user has permission to explore any pages"""
         return bool(self._explorable_pages)
 
-    @lazy_property
+    @cached_property
     def _editable_pages(self):
         """Return a queryset of the pages that this user has permission to edit"""
         # Deal with the trivial cases first...
@@ -3097,7 +3096,7 @@ class UserPagePermissionsProxy:
         """Return True if the user has permission to edit any pages"""
         return bool(self._editable_pages)
 
-    @lazy_property
+    @cached_property
     def _publishable_pages(self):
         """Return a queryset of the pages that this user has permission to publish"""
         # Deal with the trivial cases first...
@@ -3122,7 +3121,7 @@ class UserPagePermissionsProxy:
         """Return True if the user has permission to publish any pages"""
         return bool(self._publishable_pages)
 
-    @lazy_property
+    @cached_property
     def _site_details(self):
         root_page = self.explorable_root_page()
         if root_page:
