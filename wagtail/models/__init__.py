@@ -12,9 +12,9 @@ as Page.
 import functools
 import itertools
 import logging
-import operator
 import uuid
 import warnings
+from collections import defaultdict
 from io import StringIO
 from urllib.parse import urlparse
 
@@ -34,7 +34,7 @@ from django.core.handlers.base import BaseHandler
 from django.core.handlers.wsgi import WSGIRequest
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models, transaction
-from django.db.models import DEFERRED, Q, Value
+from django.db.models import DEFERRED, Prefetch, Q, Value
 from django.db.models.expressions import OuterRef, Subquery
 from django.db.models.functions import Cast, Concat, Substr
 from django.dispatch import receiver
@@ -2920,45 +2920,43 @@ class UserPagePermissionsProxy:
             self.user = user
 
             if user.is_active and not user.is_superuser:
-                permissions = (
-                    GroupPagePermission.objects.filter(group__user=user)
-                    .order_by("permission_type")
-                    .select_related("page")
-                    .iterator()
-                )
-                self.perms_by_type = {
-                    perm_type: tuple(perms)
-                    for perm_type, perms in itertools.groupby(
-                        permissions, operator.attrgetter("permission_type")
+                qs = GroupPagePermission.objects.filter(group__user=user)
+                self._pages = (
+                    Page.objects.filter(
+                        group_permissions__group__user=user,
                     )
-                }
-                self.perm_types = set(self.perms_by_type.keys())
+                    .distinct()
+                    .prefetch_related(
+                        Prefetch(
+                            "group_permissions", queryset=qs, to_attr="_perms_for_user"
+                        )
+                    )
+                    .in_bulk()
+                )
+                self.perm_types = defaultdict(set)
+                for page_pk, page in self._pages.items():
+                    page._perms_for_user = frozenset(
+                        perm.permission_type for perm in page._perms_for_user
+                    )
+                    for perm_type in page._perms_for_user:
+                        self.perm_types[perm_type].add(page_pk)
 
             setattr(user, "_page_permissions_proxy", self)
 
         return getattr(user, "_page_permissions_proxy")
 
-    def get_permissions_by_type(self, perm_type):
-        return self.perms_by_type.get(perm_type, ())
-
-    def get_permissions(self, perm_types):
-        return itertools.chain.from_iterable(
-            self.get_permissions_by_type(perm_type) for perm_type in perm_types
-        )
-
     def get_pages(self, perm_types):
-        return (perm.page for perm in self.get_permissions(perm_types))
-
-    @property
-    def permissions(self):
-        return self.get_permissions(self.perm_types)
+        page_pks = frozenset()
+        for perm_type in perm_types:
+            page_pks |= self.perm_types.get(perm_type, frozenset())
+        return (self._pages[page_pk] for page_pk in page_pks)
 
     @property
     def pages(self):
-        return self.get_pages(self.perm_types)
+        return (page for page in self._pages.values())
 
     def has_any_page_permission(self):
-        return bool(self.perms_by_type)
+        return bool(self.perm_types)
 
     @cached_property
     def _pages_with_direct_explore_permission(self):
@@ -3074,17 +3072,17 @@ class UserPagePermissionsProxy:
 
         editable_pages = Page.objects.none()
 
-        for perm in self.get_permissions_by_type("add"):
-            # user has edit permission on any subpage of perm.page
-            # (including perm.page itself) that is owned by them
-            editable_pages |= Page.objects.descendant_of(
-                perm.page, inclusive=True
-            ).filter(owner=self.user)
+        for page in self.get_pages(["add"]):
+            # user has edit permission on any subpage of page
+            # (including page itself) that is owned by them
+            editable_pages |= Page.objects.descendant_of(page, inclusive=True).filter(
+                owner=self.user
+            )
 
-        for perm in self.get_permissions_by_type("edit"):
-            # user has edit permission on any subpage of perm.page
-            # (including perm.page itself) regardless of owner
-            editable_pages |= Page.objects.descendant_of(perm.page, inclusive=True)
+        for page in self.get_pages(["edit"]):
+            # user has edit permission on any subpage of page
+            # (including page itself) regardless of owner
+            editable_pages |= Page.objects.descendant_of(page, inclusive=True)
 
         return editable_pages
 
@@ -3106,10 +3104,10 @@ class UserPagePermissionsProxy:
 
         publishable_pages = Page.objects.none()
 
-        for perm in self.get_permissions_by_type("publish"):
-            # user has publish permission on any subpage of perm.page
-            # (including perm.page itself)
-            publishable_pages |= Page.objects.descendant_of(perm.page, inclusive=True)
+        for page in self.get_pages(["publish"]):
+            # user has publish permission on any subpage of page
+            # (including page itself)
+            publishable_pages |= Page.objects.descendant_of(page, inclusive=True)
 
         return publishable_pages
 
@@ -3161,11 +3159,10 @@ class PagePermissionTester:
         self.page_is_root = page.depth == 1  # Equivalent to page.is_root()
 
         if self.user.is_active and not self.user.is_superuser:
-            self.permissions = {
-                perm.permission_type
-                for perm in user_perms.permissions
-                if self.page.path.startswith(perm.page.path)
-            }
+            self.permissions = frozenset()
+            for page in user_perms.pages:
+                if self.page.path.startswith(page.path):
+                    self.permissions |= page._perms_for_user
 
     def user_has_lock(self):
         return self.page.locked_by_id == self.user.pk

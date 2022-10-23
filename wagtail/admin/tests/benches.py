@@ -39,7 +39,7 @@ class BenchPageExplorerWith50LargePages(Benchmark, WagtailTestUtils, TestCase):
                 )
             )
 
-        self.login()
+        self.as_editor()
 
     def bench(self):
         response = self.client.get(
@@ -80,7 +80,7 @@ class BenchPageExplorerWithCustomURLPages(Benchmark, WagtailTestUtils, TestCase)
                 )
             )
 
-        self.login()
+        self.as_editor()
 
     def bench(self):
         response = self.client.get(
