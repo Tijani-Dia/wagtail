@@ -2927,7 +2927,7 @@ class UserPagePermissionsProxy:
                     .iterator()
                 )
                 self.perms_by_type = {
-                    perm_type: list(perms)
+                    perm_type: tuple(perms)
                     for perm_type, perms in itertools.groupby(
                         permissions, operator.attrgetter("permission_type")
                     )
@@ -2939,7 +2939,7 @@ class UserPagePermissionsProxy:
         return getattr(user, "_page_permissions_proxy")
 
     def get_permissions_by_type(self, perm_type):
-        return self.perms_by_type.get(perm_type, [])
+        return self.perms_by_type.get(perm_type, ())
 
     def get_permissions(self, perm_types):
         return itertools.chain.from_iterable(
@@ -2947,7 +2947,7 @@ class UserPagePermissionsProxy:
         )
 
     def get_pages(self, perm_types):
-        return {perm.page for perm in self.get_permissions(perm_types)}
+        return (perm.page for perm in self.get_permissions(perm_types))
 
     @property
     def permissions(self):
@@ -2999,16 +2999,15 @@ class UserPagePermissionsProxy:
 
         # get the list of pages for which they have direct publish permission
         # (i.e. they can publish any page within this subtree)
-        publishable_pages_paths = list(
-            {perm.page.path for perm in self.get_permissions_by_type("publish")}
-        )
-        if not publishable_pages_paths:
+        publishable_pages_paths = (page.path for page in self.get_pages(["publish"]))
+        publishable_page_path = next(publishable_pages_paths, None)
+        if publishable_page_path is None:
             return Revision.objects.none()
 
         # compile a filter expression to apply to the Revision.page_revisions.submitted() queryset:
         # return only those pages whose paths start with one of the publishable_pages paths
-        only_my_sections = Q(path__startswith=publishable_pages_paths[0])
-        for page_path in publishable_pages_paths[1:]:
+        only_my_sections = Q(path__startswith=publishable_page_path)
+        for page_path in publishable_pages_paths:
             only_my_sections = only_my_sections | Q(path__startswith=page_path)
 
         # return the filtered queryset
