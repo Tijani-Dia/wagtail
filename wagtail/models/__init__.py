@@ -12,9 +12,9 @@ as Page.
 import functools
 import itertools
 import logging
+import operator
 import uuid
 import warnings
-from collections import defaultdict
 from io import StringIO
 from urllib.parse import urlparse
 
@@ -2910,30 +2910,32 @@ class GroupPagePermission(models.Model):
 
 
 class UserPagePermissionsProxy:
-    """Helper object that encapsulates all the page permission rules that this user has
-    across the page hierarchy."""
+    """
+    Helper object that encapsulates all the page permission rules that this user has
+    across the page hierarchy.
+    """
 
     def __new__(cls, user):
         if not hasattr(user, "_page_permissions_proxy"):
-            instance = super().__new__(cls)
-            instance.user = user
+            self = super().__new__(cls)
+            self.user = user
 
             if user.is_active and not user.is_superuser:
-                perms_by_type = defaultdict(list)
-                perm_types = set()
-                permissions = GroupPagePermission.objects.filter(
-                    group__user=user
-                ).select_related("page")
+                permissions = (
+                    GroupPagePermission.objects.filter(group__user=user)
+                    .order_by("permission_type")
+                    .select_related("page")
+                    .iterator()
+                )
+                self.perms_by_type = {
+                    perm_type: list(perms)
+                    for perm_type, perms in itertools.groupby(
+                        permissions, operator.attrgetter("permission_type")
+                    )
+                }
+                self.perm_types = set(self.perms_by_type.keys())
 
-                for perm in permissions:
-                    perm_type = perm.permission_type
-                    perms_by_type[perm_type].append(perm)
-                    perm_types.add(perm_type)
-
-                instance.perms_by_type = perms_by_type
-                instance.perm_types = perm_types
-
-            setattr(user, "_page_permissions_proxy", instance)
+            setattr(user, "_page_permissions_proxy", self)
 
         return getattr(user, "_page_permissions_proxy")
 
