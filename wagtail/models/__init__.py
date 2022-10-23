@@ -2925,12 +2925,12 @@ class UserPagePermissionsProxy:
                     Page.objects.filter(
                         group_permissions__group__user=user,
                     )
-                    .distinct()
                     .prefetch_related(
                         Prefetch(
                             "group_permissions", queryset=qs, to_attr="_perms_for_user"
                         )
                     )
+                    .distinct()
                     .in_bulk()
                 )
                 self.perm_types = defaultdict(set)
@@ -2945,7 +2945,7 @@ class UserPagePermissionsProxy:
 
         return getattr(user, "_page_permissions_proxy")
 
-    def get_pages(self, perm_types):
+    def get_pages_for_perms(self, perm_types):
         page_pks = frozenset()
         for perm_type in perm_types:
             page_pks |= self.perm_types.get(perm_type, frozenset())
@@ -2955,8 +2955,13 @@ class UserPagePermissionsProxy:
     def pages(self):
         return (page for page in self._pages.values())
 
+    def for_page(self, page):
+        """Return a PagePermissionTester object that can be used to query whether this user has
+        permission to perform specific tasks on the given page"""
+        return PagePermissionTester(self, page)
+
     def has_any_page_permission(self):
-        return bool(self.perm_types)
+        return bool(self._pages)
 
     @cached_property
     def _pages_with_direct_explore_permission(self):
@@ -2965,7 +2970,7 @@ class UserPagePermissionsProxy:
             # superuser has implicit permission on the root node
             return Page.objects.filter(depth=1)
         else:
-            return self.get_pages(["add", "edit", "publish", "lock"])
+            return self.get_pages_for_perms(["add", "edit", "publish", "lock"])
 
     def pages_with_direct_explore_permission(self):
         return self._pages_with_direct_explore_permission
@@ -2997,7 +3002,9 @@ class UserPagePermissionsProxy:
 
         # get the list of pages for which they have direct publish permission
         # (i.e. they can publish any page within this subtree)
-        publishable_pages_paths = (page.path for page in self.get_pages(["publish"]))
+        publishable_pages_paths = (
+            page.path for page in self.get_pages_for_perms(["publish"])
+        )
         publishable_page_path = next(publishable_pages_paths, None)
         if publishable_page_path is None:
             return Revision.objects.none()
@@ -3018,11 +3025,6 @@ class UserPagePermissionsProxy:
     def revisions_for_moderation(self):
         return self._revisions_for_moderation
 
-    def for_page(self, page):
-        """Return a PagePermissionTester object that can be used to query whether this user has
-        permission to perform specific tasks on the given page"""
-        return PagePermissionTester(self, page)
-
     @cached_property
     def _explorable_pages(self):
         """Return a queryset of pages that the user has access to view in the
@@ -3039,7 +3041,7 @@ class UserPagePermissionsProxy:
 
         # Creates a union queryset of all objects the user has access to add,
         # edit and publish
-        for page in self.get_pages(["add", "edit", "publish", "lock"]):
+        for page in self.get_pages_for_perms(["add", "edit", "publish", "lock"]):
             explorable_pages |= Page.objects.descendant_of(page, inclusive=True)
 
         # For all pages with specific permissions, add their ancestors as
@@ -3072,14 +3074,14 @@ class UserPagePermissionsProxy:
 
         editable_pages = Page.objects.none()
 
-        for page in self.get_pages(["add"]):
+        for page in self.get_pages_for_perms(["add"]):
             # user has edit permission on any subpage of page
             # (including page itself) that is owned by them
             editable_pages |= Page.objects.descendant_of(page, inclusive=True).filter(
                 owner=self.user
             )
 
-        for page in self.get_pages(["edit"]):
+        for page in self.get_pages_for_perms(["edit"]):
             # user has edit permission on any subpage of page
             # (including page itself) regardless of owner
             editable_pages |= Page.objects.descendant_of(page, inclusive=True)
@@ -3104,7 +3106,7 @@ class UserPagePermissionsProxy:
 
         publishable_pages = Page.objects.none()
 
-        for page in self.get_pages(["publish"]):
+        for page in self.get_pages_for_perms(["publish"]):
             # user has publish permission on any subpage of page
             # (including page itself)
             publishable_pages |= Page.objects.descendant_of(page, inclusive=True)
