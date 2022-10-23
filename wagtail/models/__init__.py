@@ -3026,6 +3026,10 @@ class UserPagePermissionsProxy:
     def explorable_pages(self):
         return self._explorable_pages
 
+    def can_explore_pages(self):
+        """Return True if the user has permission to explore any pages"""
+        return bool(self._explorable_pages)
+
     @lazy_property
     def _editable_pages(self):
         """Return a queryset of the pages that this user has permission to edit"""

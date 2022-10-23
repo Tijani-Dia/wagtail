@@ -1730,14 +1730,14 @@ class TestPageEdit(TestCase, WagtailTestUtils):
         # as when running it within the full test suite
         self.client.get(reverse("wagtailadmin_pages:edit", args=(self.event_page.id,)))
 
-        with self.assertNumQueries(40):
+        with self.assertNumQueries(39):
             self.client.get(
                 reverse("wagtailadmin_pages:edit", args=(self.event_page.id,))
             )
 
         self.as_editor()
         self.client.get(reverse("wagtailadmin_pages:edit", args=(self.event_page.id,)))
-        with self.assertNumQueries(55):
+        with self.assertNumQueries(54):
             self.client.get(
                 reverse("wagtailadmin_pages:edit", args=(self.event_page.id,))
             )
