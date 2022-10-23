@@ -3119,6 +3119,29 @@ class UserPagePermissionsProxy:
         """Return True if the user has permission to publish any pages"""
         return bool(self._publishable_pages)
 
+    @lazy_property
+    def _site_details(self):
+        root_page = self.explorable_root_page()
+        if root_page:
+            root_site = root_page.get_site()
+        else:
+            root_site = None
+        real_site_name = None
+        if root_site:
+            real_site_name = (
+                root_site.site_name if root_site.site_name else root_site.hostname
+            )
+        return {
+            "root_page": root_page,
+            "root_site": root_site,
+            "site_name": real_site_name
+            if real_site_name
+            else settings.WAGTAIL_SITE_NAME,
+        }
+
+    def site_details(self):
+        return self._site_details
+
     def can_remove_locks(self):
         """Returns True if the user has permission to unlock pages they have not locked"""
         if self.user.is_superuser:
