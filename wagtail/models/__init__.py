@@ -2950,6 +2950,9 @@ class UserPagePermissionsProxy:
     def permissions(self):
         return self.get_permissions(self.perm_types)
 
+    def has_any_page_permission(self):
+        return bool(self.perms_by_type)
+
     @lazy_property
     def _revisions_for_moderation(self):
         """Return a queryset of page revisions awaiting moderation that this user has publish permission on"""
