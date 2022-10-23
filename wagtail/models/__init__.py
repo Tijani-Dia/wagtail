@@ -16,7 +16,6 @@ import uuid
 import warnings
 from collections import defaultdict
 from io import StringIO
-from operator import attrgetter
 from urllib.parse import urlparse
 
 from django import forms
@@ -78,7 +77,7 @@ from wagtail.fields import StreamField
 from wagtail.forms import TaskStateCommentForm
 from wagtail.locks import BasicLock, ScheduledForPublishLock, WorkflowLock
 from wagtail.log_actions import log
-from wagtail.query import PageQuerySet
+from wagtail.query import PageQuerySet, first_common_ancestor
 from wagtail.search import index
 from wagtail.signals import (
     page_published,
@@ -2946,12 +2945,42 @@ class UserPagePermissionsProxy:
             self.get_permissions_by_type(perm_type) for perm_type in perm_types
         )
 
+    def get_pages(self, perm_types):
+        return (perm.page for perm in self.get_permissions(perm_types))
+
     @property
     def permissions(self):
         return self.get_permissions(self.perm_types)
 
     def has_any_page_permission(self):
         return bool(self.perms_by_type)
+
+    @lazy_property
+    def _pages_with_direct_explore_permission(self):
+        # Get all pages that the user has direct add/edit/publish/lock permission on
+        if self.user.is_superuser:
+            # superuser has implicit permission on the root node
+            return Page.objects.filter(depth=1)
+        else:
+            return self.get_pages(["add", "edit", "publish", "lock"])
+
+    def pages_with_direct_explore_permission(self):
+        return self._pages_with_direct_explore_permission
+
+    @lazy_property
+    def _explorable_root_page(self):
+        # Get the highest common explorable ancestor for the given user. If the user
+        # has no permissions over any pages, this method will return None.
+        pages = self.pages_with_direct_explore_permission()
+        try:
+            root_page = first_common_ancestor(pages, include_self=True, strict=True)
+        except Page.DoesNotExist:
+            root_page = None
+
+        return root_page
+
+    def explorable_root_page(self):
+        return self._explorable_root_page
 
     @lazy_property
     def _revisions_for_moderation(self):
@@ -2966,7 +2995,7 @@ class UserPagePermissionsProxy:
         # get the list of pages for which they have direct publish permission
         # (i.e. they can publish any page within this subtree)
         publishable_pages_paths = list(
-            set(perm.page.path for perm in self.get_permissions_by_type("publish"))
+            {perm.page.path for perm in self.get_permissions_by_type("publish")}
         )
         if not publishable_pages_paths:
             return Revision.objects.none()

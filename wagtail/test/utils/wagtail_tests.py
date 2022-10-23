@@ -2,7 +2,7 @@ import warnings
 from contextlib import contextmanager
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Group
 from django.test.testcases import assert_and_parse_html
 
 

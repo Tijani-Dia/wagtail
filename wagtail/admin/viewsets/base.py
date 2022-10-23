@@ -20,7 +20,6 @@ class ViewSet:
         """
         Called when the viewset is registered; subclasses can override this to perform additional setup.
         """
-        pass
 
     def get_urlpatterns(self):
         """
