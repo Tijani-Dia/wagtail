@@ -47,9 +47,10 @@ from wagtail.users.models import UserProfile
 
 
 class TestPageEdit(TestCase, WagtailTestUtils):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Find root page
-        self.root_page = Page.objects.get(id=2)
+        cls.root_page = Page.objects.get(id=2)
 
         # Add child page
         child_page = SimplePage(
@@ -57,9 +58,9 @@ class TestPageEdit(TestCase, WagtailTestUtils):
             slug="hello-world",
             content="hello",
         )
-        self.root_page.add_child(instance=child_page)
+        cls.root_page.add_child(instance=child_page)
         child_page.save_revision().publish()
-        self.child_page = SimplePage.objects.get(id=child_page.id)
+        cls.child_page = SimplePage.objects.get(id=child_page.id)
 
         # Add file page
         fake_file = ContentFile("File for testing multipart")
@@ -69,12 +70,12 @@ class TestPageEdit(TestCase, WagtailTestUtils):
             slug="file-page",
             file_field=fake_file,
         )
-        self.root_page.add_child(instance=file_page)
+        cls.root_page.add_child(instance=file_page)
         file_page.save_revision().publish()
-        self.file_page = FilePage.objects.get(id=file_page.id)
+        cls.file_page = FilePage.objects.get(id=file_page.id)
 
         # Add event page (to test edit handlers)
-        self.event_page = EventPage(
+        cls.event_page = EventPage(
             title="Event page",
             slug="event-page",
             location="the moon",
@@ -82,10 +83,10 @@ class TestPageEdit(TestCase, WagtailTestUtils):
             cost="free",
             date_from="2001-01-01",
         )
-        self.root_page.add_child(instance=self.event_page)
+        cls.root_page.add_child(instance=cls.event_page)
 
         # Add single event page (to test custom URL routes)
-        self.single_event_page = SingleEventPage(
+        cls.single_event_page = SingleEventPage(
             title="Mars landing",
             slug="mars-landing",
             location="mars",
@@ -93,17 +94,18 @@ class TestPageEdit(TestCase, WagtailTestUtils):
             cost="free",
             date_from="2001-01-01",
         )
-        self.root_page.add_child(instance=self.single_event_page)
+        cls.root_page.add_child(instance=cls.single_event_page)
 
-        self.unpublished_page = SimplePage(
+        cls.unpublished_page = SimplePage(
             title="Hello unpublished world!",
             slug="hello-unpublished-world",
             content="hello",
             live=False,
             has_unpublished_changes=True,
         )
-        self.root_page.add_child(instance=self.unpublished_page)
+        cls.root_page.add_child(instance=cls.unpublished_page)
 
+    def setUp(self):
         # Login
         self.user = self.login()
 
@@ -1730,7 +1732,14 @@ class TestPageEdit(TestCase, WagtailTestUtils):
         # as when running it within the full test suite
         self.client.get(reverse("wagtailadmin_pages:edit", args=(self.event_page.id,)))
 
-        with self.assertNumQueries(40):
+        with self.assertNumQueries(35):
+            self.client.get(
+                reverse("wagtailadmin_pages:edit", args=(self.event_page.id,))
+            )
+
+        self.as_editor()
+        self.client.get(reverse("wagtailadmin_pages:edit", args=(self.event_page.id,)))
+        with self.assertNumQueries(46):
             self.client.get(
                 reverse("wagtailadmin_pages:edit", args=(self.event_page.id,))
             )
