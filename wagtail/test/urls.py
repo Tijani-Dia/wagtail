@@ -17,6 +17,7 @@ from wagtail.images.api.v2.views import ImagesAPIViewSet
 from wagtail.images.tests import urls as wagtailimages_test_urls
 from wagtail.test.testapp import urls as testapp_urls
 from wagtail.test.testapp.models import EventSitemap
+from dj_tracker.urls import urlpatterns as dj_tracker_urls
 
 api_router = WagtailAPIRouter("wagtailapi_v2")
 api_router.register_endpoint("pages", PagesAPIViewSet)
@@ -25,6 +26,7 @@ api_router.register_endpoint("documents", DocumentsAPIViewSet)
 
 
 urlpatterns = [
+    path("dj-tracker/", include(dj_tracker_urls)),
     path("admin/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
     path("testimages/", include(wagtailimages_test_urls)),

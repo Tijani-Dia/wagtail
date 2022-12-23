@@ -1,32 +1,29 @@
 import os
+from pathlib import Path
 
 from django.contrib.messages import constants as message_constants
 from django.utils.translation import gettext_lazy as _
 
-DEBUG = False
+DEBUG = True
 WAGTAIL_ROOT = os.path.dirname(os.path.dirname(__file__))
 WAGTAILADMIN_BASE_URL = "http://testserver"
 STATIC_ROOT = os.path.join(WAGTAIL_ROOT, "tests", "test-static")
 MEDIA_ROOT = os.path.join(WAGTAIL_ROOT, "tests", "test-media")
+BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_URL = "/media/"
 
 TIME_ZONE = "Asia/Tokyo"
 
 DATABASES = {
     "default": {
-        "ENGINE": os.environ.get("DATABASE_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.environ.get("DATABASE_NAME", ":memory:"),
-        "USER": os.environ.get("DATABASE_USER", ""),
-        "PASSWORD": os.environ.get("DATABASE_PASSWORD", ""),
-        "HOST": os.environ.get("DATABASE_HOST", ""),
-        "PORT": os.environ.get("DATABASE_PORT", ""),
-        "TEST": {"NAME": os.environ.get("DATABASE_NAME", "")},
-    }
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": str(BASE_DIR / "defaultdb"),
+    },
+    "trackings": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": str(BASE_DIR / "trackingsdb"),
+    },
 }
-
-# Set regular database name when a non-SQLite db is used
-if DATABASES["default"]["ENGINE"] != "django.db.backends.sqlite3":
-    DATABASES["default"]["NAME"] = os.environ.get("DATABASE_NAME", "wagtail")
 
 # Add extra options when mssql is used (on for example appveyor)
 if DATABASES["default"]["ENGINE"] == "sql_server.pyodbc":
@@ -42,6 +39,7 @@ if DATABASES["default"]["ENGINE"] == "django.db.backends.mysql":
     DATABASES["default"]["TEST"]["CHARSET"] = "utf8"
     DATABASES["default"]["TEST"]["COLLATION"] = "utf8_general_ci"
 
+DATABASE_ROUTERS = ["dj_tracker.db_router.DjTrackerRouter"]
 
 SECRET_KEY = "not needed"
 
@@ -102,6 +100,7 @@ TEMPLATES = [
 ]
 
 MIDDLEWARE = (
+    "dj_tracker.middleware.DjTrackerMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -156,6 +155,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.sitemaps",
     "django.contrib.staticfiles",
+    "dj_tracker",
 ]
 
 
@@ -173,7 +173,7 @@ PASSWORD_HASHERS = (
     "django.contrib.auth.hashers.MD5PasswordHasher",  # don't use the intentionally slow default password hasher
 )
 
-ALLOWED_HOSTS = ["localhost", "testserver", "other.example.com"]
+ALLOWED_HOSTS = ["localhost", "testserver", "other.example.com", "127.0.0.1"]
 
 WAGTAILSEARCH_BACKENDS = {
     "default": {
@@ -256,4 +256,14 @@ MESSAGE_TAGS = {
     message_constants.SUCCESS: "my-custom-tag",
     message_constants.WARNING: "my-custom-tag",
     message_constants.ERROR: "my-custom-tag",
+}
+
+DJ_TRACKER = {
+    "IGNORE_MODULES": {
+        "rest_framework/",
+        "runpy.py",
+        "cProfile.py",
+        "profile.py",
+        "runtests.py",
+    }
 }
